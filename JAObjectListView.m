@@ -74,15 +74,15 @@
     NSMutableArray *sectionViews = nil;
     if(section < self.sectionRowViews.count) {
         sectionViews = [self.sectionRowViews objectAtIndex:section];
-    } else {
+    } else if(section != NSNotFound) { // added NSNotFound check
         sectionViews = [NSMutableArray array];
-        [self.sectionRowViews insertObject:sectionViews atIndex:section];
+        [self.sectionRowViews insertObject:sectionViews atIndex:section]; //!!! boom - bounds
     }
     
     if(index < sectionViews.count) {
         [sectionViews replaceObjectAtIndex:index withObject:view];
-    } else {
-        [sectionViews insertObject:view atIndex:index];
+    } else if(index != NSNotFound) { // added NSNotFound check
+        [sectionViews insertObject:view atIndex:index]; //!!! boom - bounds
     }
 }
 

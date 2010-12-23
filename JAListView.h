@@ -74,8 +74,11 @@ extern NSString * const JAListViewDraggingPasteboardType;
 
 - (void)reloadData;
 - (void)reloadDataAnimated:(BOOL)animated;
+- (void)reloadDataWithAnimation:(void (^)(NSView *newSuperview, NSArray *viewsToAdd, NSArray *viewsToRemove, NSArray *viewsToMove))animationBlock;
+
 - (void)reloadLayout;
 - (void)reloadLayoutAnimated:(BOOL)animated;
+- (void)reloadLayoutWithAnimation:(void (^)(NSView *newSuperview, NSArray *viewsToAdd, NSArray *viewsToRemove, NSArray *viewsToMove))animationBlock;
 
 - (NSUInteger)numberOfViews;
 - (JAListViewItem *)viewAtIndex:(NSUInteger)index;
@@ -103,6 +106,8 @@ extern NSString * const JAListViewDraggingPasteboardType;
 - (id)viewForObject:(id)object;
 - (void)removeViewForObject:(id)object;
 - (void)removeAllStoredViews;
+
+- (CGFloat)cachedYLocationForView:(JAListViewItem *)view;
 
 /**
  * Will call the delegate's listView:didSelectView: but not listView:shouldSelectView: or listView:willSelectView:.
