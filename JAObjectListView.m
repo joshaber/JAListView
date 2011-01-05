@@ -7,9 +7,14 @@
 //
 
 #import "JAObjectListView.h"
+#import "JAObjectListViewItem.h"
+
+@interface JAListView (Private)
+- (NSArray *)cachedViews;
+@end
 
 @interface JAObjectListView ()
-- (void)reallyAddListViewItem:(JAListViewItem *)view inSection:(NSUInteger)section atIndex:(NSUInteger)index;
+- (void)reallyAddListViewItem:(JAObjectListViewItem *)view inSection:(NSUInteger)section atIndex:(NSUInteger)index;
 
 @property (nonatomic, retain) NSMutableArray *sectionRowViews;
 @end
@@ -66,60 +71,89 @@
 
 @synthesize sectionRowViews;
 
-- (void)addListViewItem:(JAListViewItem *)view inSection:(NSUInteger)section atIndex:(NSUInteger)index {
+- (void)addListViewItem:(JAObjectListViewItem *)view inSection:(NSUInteger)section atIndex:(NSUInteger)index {
     [self reallyAddListViewItem:view inSection:section atIndex:index + 1];
 }
 
-- (void)reallyAddListViewItem:(JAListViewItem *)view inSection:(NSUInteger)section atIndex:(NSUInteger)index {
+- (void)reallyAddListViewItem:(JAObjectListViewItem *)view inSection:(NSUInteger)section atIndex:(NSUInteger)index {
     NSMutableArray *sectionViews = nil;
     if(section < self.sectionRowViews.count) {
         sectionViews = [self.sectionRowViews objectAtIndex:section];
     } else if(section != NSNotFound) { // added NSNotFound check
         sectionViews = [NSMutableArray array];
         [self.sectionRowViews insertObject:sectionViews atIndex:section]; //!!! boom - bounds
+    } else {
+        NSAssert1(NO, @"Tried to insert view into a non-existent section: %@", view);
     }
     
     if(index < sectionViews.count) {
         [sectionViews replaceObjectAtIndex:index withObject:view];
     } else if(index != NSNotFound) { // added NSNotFound check
         [sectionViews insertObject:view atIndex:index]; //!!! boom - bounds
+    } else {
+        NSAssert1(NO, @"Tried to insert view into a non-existent row: %@", view);
     }
 }
 
-- (void)addListViewItem:(JAListViewItem *)view inSection:(NSUInteger)section {
+- (void)addListViewItem:(JAObjectListViewItem *)view inSection:(NSUInteger)section {
     [self addListViewItem:view inSection:section atIndex:[self viewsInSection:section].count];
 }
 
 - (void)removeListViewItemInSection:(NSUInteger)section atIndex:(NSUInteger)index {
     NSMutableArray *sectionViews = [self.sectionRowViews objectAtIndex:section];
-    [sectionViews removeObjectAtIndex:index + 1];
+    
+    NSUInteger trueIndex = index + 1;
+    JAObjectListViewItem *view = [sectionViews objectAtIndex:trueIndex];
+    if(self.viewBeingUsedForInertialScroll == view) {
+        self.viewBeingUsedForInertialScroll = nil;
+    }
+    
+    [self deselectView:view];
+    
+    [sectionViews removeObjectAtIndex:trueIndex];
 }
 
-- (void)addListViewItem:(JAListViewItem *)view forHeaderForSection:(NSUInteger)section {
+- (void)addListViewItem:(JAObjectListViewItem *)view forHeaderForSection:(NSUInteger)section {
     NSMutableArray *sectionViews = [NSMutableArray array];
     [self.sectionRowViews insertObject:sectionViews atIndex:section];
     [sectionViews insertObject:view atIndex:0];
 }
 
 - (void)removeListViewItemForHeaderForSection:(NSUInteger)section {
+    NSArray *views = [self.sectionRowViews objectAtIndex:section];    
+    for(JAObjectListViewItem *item in views) {
+        if(self.viewBeingUsedForInertialScroll == item) {
+            self.viewBeingUsedForInertialScroll = nil;
+        }
+        
+        [self deselectView:item];
+    }
+    
     [self.sectionRowViews removeObjectAtIndex:section];
 }
 
-- (void)removeListViewItem:(JAListViewItem *)view {
+- (void)removeListViewItem:(JAObjectListViewItem *)view {
+    if(self.viewBeingUsedForInertialScroll == view) {
+        self.viewBeingUsedForInertialScroll = nil;
+    }
+    
     [self deselectView:view];
     
     for(NSUInteger sectionIndex = 0; sectionIndex < self.sectionRowViews.count; sectionIndex++) {
         NSMutableArray *sectionViews = [self.sectionRowViews objectAtIndex:sectionIndex];
         NSUInteger index = [sectionViews indexOfObject:view];
-        if(index == 0) {
-            [self.sectionRowViews removeObjectAtIndex:sectionIndex];
-        } else if(index != NSNotFound) {
-            [sectionViews removeObjectAtIndex:index];
+        if(index != NSNotFound) {
+            if(index == 0) {
+                [self.sectionRowViews removeObjectAtIndex:sectionIndex];
+            } else {
+                [sectionViews removeObjectAtIndex:index];
+            }
         }
     }
 }
 
 - (void)removeAllListViewItems {
+    self.viewBeingUsedForInertialScroll = nil;
     [self deselectAllViews];
     [self.sectionRowViews removeAllObjects];
 }
@@ -136,6 +170,41 @@
 
 - (NSUInteger)numberOfSections {
     return self.sectionRowViews.count;
+}
+
+- (JAObjectListViewItem *)viewItemForObject:(id)object {
+    for(NSArray *views in self.sectionRowViews) {
+        for(JAObjectListViewItem *item in views) {
+            if([item.object isEqual:object]) {
+                return item;
+            }
+        }
+    }
+    
+    return nil;
+}
+
+- (NSIndexPath *)indexPathForObject:(id)object {
+    NSUInteger section = 0;
+    for(NSArray *views in self.sectionRowViews) {
+        
+        NSUInteger index = 0;
+        for(JAObjectListViewItem *item in views) {
+            if([item.object isEqual:object]) {
+                if(index == 0) {
+                    return [NSIndexPath indexPathForIndex:JASectionedListViewHeaderIndex inSection:section];
+                } else {
+                    return [NSIndexPath indexPathForIndex:index - 1 inSection:section];
+                }
+            }
+            
+            index++;
+        }
+        
+        section++;
+    }
+    
+    return nil;
 }
 
 @end

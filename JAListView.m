@@ -26,7 +26,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 - (void)updateCachedVisibleViews;
 - (void)clearCachedLocations;
 - (void)seriouslyShowVisibleViewsWithAnimation;
-- (id)keyForObject:(id)object;
 - (void)getSelectionMinimumIndex:(NSUInteger *)minIndex maximumIndex:(NSUInteger *)maxIndex;
 - (JAListViewItem *)nextSelectableView;
 - (JAListViewItem *)nextSelectableViewFromIndex:(NSUInteger)startingIndex;
@@ -40,7 +39,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 @property (nonatomic, retain) NSArray *cachedVisibleViews;
 @property (nonatomic, assign) __weak JAListViewItem *viewBeingSelected;
 @property (nonatomic, retain) NSArray *viewsCurrentlyBeingDragged;
-@property (nonatomic, retain) NSMutableDictionary *viewStorage;
 @property (nonatomic, retain) NSMutableArray *currentlySelectedViews;
 @property (nonatomic, retain) NSTrackingArea *currentTrackingArea;
 @property (nonatomic, copy) void (^currentAnimationBlock)(NSView *newSuperview, NSArray *viewsToAdd, NSArray *viewsToRemove, NSArray *viewsToMove);
@@ -67,7 +65,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     self.viewBeingUsedForInertialScroll = nil;
     self.backgroundColor = nil;
     self.cachedVisibleViews = nil;
-    self.viewStorage = nil;
     self.currentlySelectedViews = nil;
     self.currentTrackingArea = nil;
     self.currentAnimationBlock = nil;
@@ -194,13 +191,13 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
             self.viewBeingSelected.highlighted = NO;
             self.viewBeingSelected = nil;
         } else {
-            for(JAListViewItem *selectedView in [[self.currentlySelectedViews copy] autorelease]) {
-                [[selectedView retain] autorelease];
-                selectedView.selected = NO;
-                [self.currentlySelectedViews removeObject:selectedView];
+            for(JAListViewItem *itemView in [[self.currentlySelectedViews copy] autorelease]) {
+                [[itemView retain] autorelease];
+                itemView.selected = NO;
+                [self.currentlySelectedViews removeObject:itemView];
                 
                 if(respondsToUnSelect) {
-                    [self.delegate listView:self didDeselectView:selectedView];
+                    [self.delegate listView:self didDeselectView:itemView];
                 }
             }
         }
@@ -278,13 +275,13 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
                 [self.delegate listView:self didSelectView:view];
             }
         } else {
-            for(JAListViewItem *selectedView in [[self.currentlySelectedViews copy] autorelease]) {
-                [[selectedView retain] autorelease];
-                selectedView.selected = NO;
-                [self.currentlySelectedViews removeObject:selectedView];
+            for(JAListViewItem *itemView in [[self.currentlySelectedViews copy] autorelease]) {
+                [[itemView retain] autorelease];
+                itemView.selected = NO;
+                [self.currentlySelectedViews removeObject:itemView];
                 
                 if(respondsToUnSelect) {
-                    [self.delegate listView:self didDeselectView:selectedView];
+                    [self.delegate listView:self didDeselectView:itemView];
                 }
             }
             
@@ -513,7 +510,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     margin = NSZeroPoint;
     self.backgroundColor = [NSColor darkGrayColor];
     [self registerForDraggedTypes:[NSArray arrayWithObject:JAListViewDraggingPasteboardType]];
-    self.viewStorage = [NSMutableDictionary dictionary];
     self.currentlySelectedViews = [NSMutableArray array];
 }
 
@@ -801,6 +797,10 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     return [self.visibleViews containsObject:view];
 }
 
+- (BOOL)containsViewItem:(JAListViewItem *)viewItem {
+    return [self.cachedViews containsObject:viewItem];
+}
+
 - (NSArray *)visibleViews {
     return self.cachedVisibleViews;
 }
@@ -818,55 +818,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     }
     
     self.cachedVisibleViews = newVisibleViews;
-}
-
-- (void)setView:(JAListViewItem *)view forKey:(id)key {
-    [self.viewStorage setObject:view forKey:key];
-}
-
-- (id)viewForKey:(id)key {
-    return [self.viewStorage objectForKey:key];
-}
-
-- (void)removeViewForKey:(id)key {
-    [self.viewStorage removeObjectForKey:key];
-}
-
-- (id)keyForView:(JAListViewItem *)view {
-    for(id key in self.viewStorage) {
-        if([[self.viewStorage objectForKey:key] isEqualTo:view]) {
-            return key;
-        }
-    }
-    
-    return nil;
-}
-
-- (void)setView:(JAListViewItem *)view forObject:(id)object {
-    [self setView:view forKey:[self keyForObject:object]];
-}
-
-- (id)viewForObject:(id)object {
-    return [self viewForKey:[self keyForObject:object]];
-}
-
-- (void)removeViewForObject:(id)object {
-    [self removeViewForKey:[self keyForObject:object]];
-}
-
-- (void)removeAllStoredViews {
-    [self.viewStorage removeAllObjects];
-}
-
-- (id)keyForObject:(id)object {
-    // keys are copied when put into a dictionary, so if they object isn't copyable then we need to just use its pointer address as the key
-    if([object conformsToProtocol:@protocol(NSCopying)]) {
-        return object;
-    } else if([object respondsToSelector:@selector(hash)]) {
-        return [NSNumber numberWithUnsignedInteger:[object hash]];
-    } else {
-        return [NSString stringWithFormat:@"%p", object];
-    }
 }
 
 - (NSScrollView *)scrollView {
@@ -1037,7 +988,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 @synthesize backgroundColor;
 @synthesize heightForAllContent;
 @synthesize conditionallyUseLayerBacking;
-@synthesize viewStorage;
 @synthesize currentlySelectedViews;
 @synthesize currentTrackingArea;
 @synthesize currentAnimationBlock;

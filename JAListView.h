@@ -85,6 +85,8 @@ extern NSString * const JAListViewDraggingPasteboardType;
 - (NSInteger)indexForView:(JAListViewItem *)view;
 - (BOOL)isViewVisible:(JAListViewItem *)view;
 
+- (BOOL)containsViewItem:(JAListViewItem *)viewItem;
+
 - (JAListViewItem *)viewAtPoint:(NSPoint)point;
 
 /*
@@ -96,16 +98,6 @@ extern NSString * const JAListViewDraggingPasteboardType;
  * Default implementation returns proposedHeight. Subclasses could implement this to adjust the height of the view.
  */
 - (CGFloat)heightForView:(JAListViewItem *)view proposedHeight:(CGFloat)proposedHeight;
-
-- (void)setView:(JAListViewItem *)view forKey:(id)key;
-- (id)viewForKey:(id)key;
-- (void)removeViewForKey:(id)key;
-- (id)keyForView:(JAListViewItem *)view;
-
-- (void)setView:(JAListViewItem *)view forObject:(id)object;
-- (id)viewForObject:(id)object;
-- (void)removeViewForObject:(id)object;
-- (void)removeAllStoredViews;
 
 - (CGFloat)cachedYLocationForView:(JAListViewItem *)view;
 

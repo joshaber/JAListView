@@ -9,21 +9,24 @@
 #import <Cocoa/Cocoa.h>
 #import "JASectionedListView.h"
 
-@class JAListViewItem;
+@class JAObjectListViewItem;
 
 
 @interface JAObjectListView : JASectionedListView <JASectionedListViewDataSource> {}
 
-- (void)addListViewItem:(JAListViewItem *)view inSection:(NSUInteger)section atIndex:(NSUInteger)index;
-- (void)addListViewItem:(JAListViewItem *)view inSection:(NSUInteger)section;
+- (void)addListViewItem:(JAObjectListViewItem *)view inSection:(NSUInteger)section atIndex:(NSUInteger)index;
+- (void)addListViewItem:(JAObjectListViewItem *)view inSection:(NSUInteger)section;
 - (void)removeListViewItemInSection:(NSUInteger)section atIndex:(NSUInteger)index;
 
-- (void)addListViewItem:(JAListViewItem *)view forHeaderForSection:(NSUInteger)section;
+- (void)addListViewItem:(JAObjectListViewItem *)view forHeaderForSection:(NSUInteger)section;
 - (void)removeListViewItemForHeaderForSection:(NSUInteger)section;
 
-- (void)removeListViewItem:(JAListViewItem *)view;
+- (void)removeListViewItem:(JAObjectListViewItem *)view;
 - (void)removeAllListViewItems;
 - (NSArray *)viewsInSection:(NSUInteger)section;
 - (NSUInteger)numberOfSections;
+
+- (JAObjectListViewItem *)viewItemForObject:(id)object;
+- (NSIndexPath *)indexPathForObject:(id)object;
 
 @end
