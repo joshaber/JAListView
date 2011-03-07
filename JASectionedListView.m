@@ -101,7 +101,7 @@
 }
 
 - (NSIndexPath *)indexPathForView:(JAListViewItem *)view {
-    return [self indexPathFromAbsoluteIndex:[self indexForView:view]];
+    return [self indexPathFromAbsoluteIndex:(NSUInteger) [self indexForView:view]];
 }
 
 - (BOOL)isViewSectionHeaderView:(JAListViewItem *)view {

@@ -7,6 +7,7 @@
 //
 
 #import <Cocoa/Cocoa.h>
+#import "JAEdgeInsets.h"
 
 @class JAListView;
 @class JAListViewItem;
@@ -35,6 +36,8 @@ extern NSString * const JAListViewDraggingPasteboardType;
 - (void)listView:(JAListView *)listView willSelectView:(JAListViewItem *)view;
 - (void)listView:(JAListView *)listView didSelectView:(JAListViewItem *)view;
 - (void)listView:(JAListView *)listView didDeselectView:(JAListViewItem *)view;
+
+- (void)listView:(JAListView *)listView didRemoveView:(JAListViewItem *)view;
 @end
 
 @protocol JAListViewDraggingSourceDelegate <NSObject>
@@ -64,7 +67,6 @@ extern NSString * const JAListViewDraggingPasteboardType;
     NSPoint margin;
     CGFloat *cachedLocations;
     __weak JAListViewItem *viewBeingSelected;
-    JAListViewItem *viewBeingUsedForInertialScroll;
     NSColor *backgroundColor;
     BOOL isResizingManually;
     BOOL conditionallyUseLayerBacking;
@@ -116,6 +118,10 @@ extern NSString * const JAListViewDraggingPasteboardType;
  */
 - (void)deselectAllViews;
 
+- (void)markViewBeingUsedForInertialScrolling:(JAListViewItem *)newView;
+- (void)unmarkViewBeingUsedForInertialScrolling:(JAListViewItem *)view;
+- (void)clearViewsBeingUsedForInertialScrolling;
+
 @property (nonatomic, readonly) NSScrollView *scrollView;
 @property (nonatomic, assign) IBOutlet id<JAListViewDataSource> dataSource;
 @property (nonatomic, assign) IBOutlet id<JAListViewDelegate> delegate;
@@ -124,7 +130,7 @@ extern NSString * const JAListViewDraggingPasteboardType;
 @property (nonatomic, assign) BOOL canCallDataSourceInParallel;
 @property (nonatomic, readonly) NSArray *visibleViews;
 @property (nonatomic, assign) NSPoint margin;
-@property (nonatomic, retain) JAListViewItem *viewBeingUsedForInertialScroll;
+@property (nonatomic, assign) JAEdgeInsets padding;
 @property (nonatomic, retain) NSColor *backgroundColor;
 @property (nonatomic, readonly) CGFloat heightForAllContent;
 @property (nonatomic, assign) BOOL conditionallyUseLayerBacking;

@@ -79,17 +79,15 @@
     NSMutableArray *sectionViews = nil;
     if(section < self.sectionRowViews.count) {
         sectionViews = [self.sectionRowViews objectAtIndex:section];
-    } else if(section != NSNotFound) { // added NSNotFound check
+    } else if(section != NSNotFound) {
         sectionViews = [NSMutableArray array];
-        [self.sectionRowViews insertObject:sectionViews atIndex:section]; //!!! boom - bounds
+        [self.sectionRowViews insertObject:sectionViews atIndex:section];
     } else {
         NSAssert1(NO, @"Tried to insert view into a non-existent section: %@", view);
     }
     
-    if(index < sectionViews.count) {
-        [sectionViews replaceObjectAtIndex:index withObject:view];
-    } else if(index != NSNotFound) { // added NSNotFound check
-        [sectionViews insertObject:view atIndex:index]; //!!! boom - bounds
+    if(index != NSNotFound) {
+        [sectionViews insertObject:view atIndex:index];
     } else {
         NSAssert1(NO, @"Tried to insert view into a non-existent row: %@", view);
     }
@@ -104,9 +102,7 @@
     
     NSUInteger trueIndex = index + 1;
     JAObjectListViewItem *view = [sectionViews objectAtIndex:trueIndex];
-    if(self.viewBeingUsedForInertialScroll == view) {
-        self.viewBeingUsedForInertialScroll = nil;
-    }
+	[self unmarkViewBeingUsedForInertialScrolling:view];
     
     [self deselectView:view];
     
@@ -122,9 +118,7 @@
 - (void)removeListViewItemForHeaderForSection:(NSUInteger)section {
     NSArray *views = [self.sectionRowViews objectAtIndex:section];    
     for(JAObjectListViewItem *item in views) {
-        if(self.viewBeingUsedForInertialScroll == item) {
-            self.viewBeingUsedForInertialScroll = nil;
-        }
+        [self unmarkViewBeingUsedForInertialScrolling:item];
         
         [self deselectView:item];
     }
@@ -132,10 +126,8 @@
     [self.sectionRowViews removeObjectAtIndex:section];
 }
 
-- (void)removeListViewItem:(JAObjectListViewItem *)view {
-    if(self.viewBeingUsedForInertialScroll == view) {
-        self.viewBeingUsedForInertialScroll = nil;
-    }
+- (void)removeListViewItem:(JAListViewItem *)view {
+    [self unmarkViewBeingUsedForInertialScrolling:view];
     
     [self deselectView:view];
     
@@ -144,7 +136,7 @@
         NSUInteger index = [sectionViews indexOfObject:view];
         if(index != NSNotFound) {
             if(index == 0) {
-                [self.sectionRowViews removeObjectAtIndex:sectionIndex];
+                [self removeListViewItemForHeaderForSection:sectionIndex];
             } else {
                 [sectionViews removeObjectAtIndex:index];
             }
@@ -153,13 +145,13 @@
 }
 
 - (void)removeAllListViewItems {
-    self.viewBeingUsedForInertialScroll = nil;
+    [self clearViewsBeingUsedForInertialScrolling];
     [self deselectAllViews];
     [self.sectionRowViews removeAllObjects];
 }
 
 - (NSArray *)viewsInSection:(NSUInteger)section {
-    if(section >= self.sectionRowViews.count) return nil;
+    NSParameterAssert(section < self.sectionRowViews.count);
     
     NSMutableArray *views = [[[self.sectionRowViews objectAtIndex:section] mutableCopy] autorelease];
     if(views.count < 1) return nil;
@@ -185,6 +177,8 @@
 }
 
 - (NSIndexPath *)indexPathForObject:(id)object {
+	NSAssert(object != nil, @"Invalid to look for the index path of a nil object.");
+	
     NSUInteger section = 0;
     for(NSArray *views in self.sectionRowViews) {
         
@@ -205,6 +199,29 @@
     }
     
     return nil;
+}
+
+- (JAListViewItem *)headerForSection:(NSUInteger)section {
+	return [[self.sectionRowViews objectAtIndex:section] objectAtIndex:0];
+}
+
+- (void)removeListViewItemForObject:(id)object {
+    [self removeListViewItem:[self viewItemForObject:object]];
+}
+
+- (NSArray *)allObjects {
+	NSMutableArray *objects = [NSMutableArray array];
+	for(NSArray *views in self.sectionRowViews) {
+		for(JAObjectListViewItem *item in views) {
+			if(item.object != nil) [objects addObject:item.object];
+		}
+	}
+	
+	return objects;
+}
+
+- (NSString *)debugString {
+	return [NSString stringWithFormat:@"%@", self.sectionRowViews];
 }
 
 @end

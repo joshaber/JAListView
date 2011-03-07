@@ -46,6 +46,7 @@
 		885CF38312A051AD0069C4CF /* NSIndexPath+JAListViewExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSIndexPath+JAListViewExtensions.h"; sourceTree = "<group>"; };
 		885CF38412A051AD0069C4CF /* NSIndexPath+JAListViewExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSIndexPath+JAListViewExtensions.m"; sourceTree = "<group>"; };
 		888799BB12B2EB89006A9135 /* Demo-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Demo-Info.plist"; sourceTree = "<group>"; };
+		88D30AC413249FEC00F32DB2 /* JAEdgeInsets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JAEdgeInsets.h; sourceTree = "<group>"; };
 		88DA16181254594E00A1D5AA /* JAListView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JAListView.h; sourceTree = "<group>"; };
 		88DA16191254594E00A1D5AA /* JAListView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JAListView.m; sourceTree = "<group>"; };
 		88DA1678125461A200A1D5AA /* DemoView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DemoView.h; sourceTree = "<group>"; };
@@ -159,6 +160,7 @@
 			children = (
 				88DA16181254594E00A1D5AA /* JAListView.h */,
 				88DA16191254594E00A1D5AA /* JAListView.m */,
+				88D30AC413249FEC00F32DB2 /* JAEdgeInsets.h */,
 				885CF18912A044CC0069C4CF /* JASectionedListView.h */,
 				885CF18A12A044CC0069C4CF /* JASectionedListView.m */,
 				8842256812AD686600A4B4D9 /* JAObjectListView.h */,

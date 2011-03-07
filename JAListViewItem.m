@@ -7,6 +7,7 @@
 
 #import "JAListViewItem.h"
 #import "JAListView.h"
+#import "JASectionedListView.h"
 
 
 @implementation JAListViewItem
@@ -14,10 +15,16 @@
 
 #pragma mark NSView
 
-- (void)scrollWheel:(NSEvent *)event {
-    self.listView.viewBeingUsedForInertialScroll = self;
-    
+- (void)scrollWheel:(NSEvent *)event {    
+	[self.listView markViewBeingUsedForInertialScrolling:self];
     [super scrollWheel:event];
+}
+
+
+#pragma mark NSResponder
+
+- (BOOL)acceptsFirstResponder {
+    return YES;
 }
 
 
@@ -27,6 +34,7 @@
 @synthesize listView;
 @synthesize selected;
 @synthesize highlighted;
+@synthesize listViewPosition;
 
 - (NSImage *)draggingImage {
     NSBitmapImageRep *bitmap = [self bitmapImageRepForCachingDisplayInRect:self.bounds];
@@ -46,6 +54,35 @@
     [result unlockFocus];
     
     return result;
+}
+
+- (JAListViewPosition)listViewPosition {
+	JAListViewPosition position = JAListViewPositionNone;
+	NSUInteger index = (NSUInteger) [self.listView indexForView:self];
+	NSUInteger numberOfViews = [self.listView numberOfViews];
+	
+	if([self.listView isKindOfClass:[JASectionedListView class]]) {
+		JASectionedListView *sectionedListView = (JASectionedListView *) self.listView;
+		NSUInteger section = 0;
+		NSUInteger newIndex = index;
+		[sectionedListView getSection:&section andIndex:&newIndex fromAbsoluteIndex:index];
+		index = newIndex;
+		numberOfViews = [sectionedListView numberOfViewsInSection:section];
+	}
+	
+	if(index == numberOfViews - 1) {
+		position |= JAListViewPositionBottom;
+	}
+	
+	if(index == 0) {
+		position |= JAListViewPositionTop;
+	}
+	
+	if(position == JAListViewPositionNone) {
+		position = JAListViewPositionMiddle;
+	}
+	
+	return position;
 }
 
 - (void)setSelected:(BOOL)newValue {

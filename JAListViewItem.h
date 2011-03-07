@@ -7,6 +7,13 @@
 
 #import <Cocoa/Cocoa.h>
 
+typedef enum {
+	JAListViewPositionTop = 1 << 1,
+	JAListViewPositionMiddle = 1 << 2,
+	JAListViewPositionBottom = 1 << 3,
+	JAListViewPositionNone = 0,
+} JAListViewPosition;
+
 @class JAListView;
 
 
@@ -18,5 +25,6 @@
 @property (nonatomic, assign) BOOL ignoreInListViewLayout;
 @property (nonatomic, assign, getter=isSelected) BOOL selected;
 @property (nonatomic, assign, getter=isHighlighted) BOOL highlighted;
+@property (nonatomic, readonly) JAListViewPosition listViewPosition;
 
 @end

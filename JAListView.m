@@ -42,6 +42,8 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 @property (nonatomic, retain) NSMutableArray *currentlySelectedViews;
 @property (nonatomic, retain) NSTrackingArea *currentTrackingArea;
 @property (nonatomic, copy) void (^currentAnimationBlock)(NSView *newSuperview, NSArray *viewsToAdd, NSArray *viewsToRemove, NSArray *viewsToMove);
+@property (nonatomic, retain) NSMutableArray *viewsBeingUsedForInertialScrolling;
+@property (nonatomic, assign) NSUInteger minIndexForReLayout;
 @end
 
 
@@ -62,12 +64,12 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
         cachedLocations = NULL;
     }
     
-    self.viewBeingUsedForInertialScroll = nil;
     self.backgroundColor = nil;
     self.cachedVisibleViews = nil;
     self.currentlySelectedViews = nil;
     self.currentTrackingArea = nil;
     self.currentAnimationBlock = nil;
+	self.viewsBeingUsedForInertialScrolling = nil;
     
     [super dealloc];
 }
@@ -122,13 +124,13 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     [super drawRect:dirtyRect];
     
     [self.backgroundColor set];
-    NSRectFill(dirtyRect);
+    NSRectFillUsingOperation(dirtyRect, NSCompositeSourceOver);
 }
 
 
 #pragma mark NSResponder
 
-- (void)rightMouseUp:(NSEvent *)event {    
+- (void)rightMouseDown:(NSEvent *)event {    
     NSPoint location = [self convertPoint:[event locationInWindow] fromView:nil];
     JAListViewItem *view = [self viewAtPoint:location];
 
@@ -137,9 +139,13 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     }
 }
 
-- (void)mouseDown:(NSEvent *)event {
+- (void)rightMouseUp:(NSEvent *)event {
+	[self rightMouseDown:event];
+}
+
+- (void)mouseDown:(NSEvent *)event {    
     if(([event modifierFlags] & NSControlKeyMask) != 0 && [event clickCount] == 1) {
-        [self rightMouseUp:event];
+        [self rightMouseDown:event];
         return;
     }
     
@@ -176,6 +182,11 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 }
 
 - (void)mouseUp:(NSEvent *)event {
+	// this is to fix a nasty AppKit bug where the event after a contexual menu gets routed oddly and we end up with a mouseUp event that doesn't really belong to us
+	if(!NSPointInRect([self convertPoint:[event locationInWindow] fromView:nil], self.frame)) {
+		return;
+	}
+	
     [self removeTrackingArea:self.currentTrackingArea];
     self.currentTrackingArea = nil;
     
@@ -191,13 +202,12 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
             self.viewBeingSelected.highlighted = NO;
             self.viewBeingSelected = nil;
         } else {
-            for(JAListViewItem *itemView in [[self.currentlySelectedViews copy] autorelease]) {
-                [[itemView retain] autorelease];
-                itemView.selected = NO;
-                [self.currentlySelectedViews removeObject:itemView];
+            for(JAListViewItem *selectedView in [[self.currentlySelectedViews copy] autorelease]) {
+                selectedView.selected = NO;
+                [self.currentlySelectedViews removeObject:selectedView];
                 
                 if(respondsToUnSelect) {
-                    [self.delegate listView:self didDeselectView:itemView];
+                    [self.delegate listView:self didDeselectView:selectedView];
                 }
             }
         }
@@ -236,11 +246,14 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
             }
         } else if([event modifierFlags] & NSShiftKeyMask) {
             JAListViewItem *lastSelectedView = [self.currentlySelectedViews lastObject];
-            NSUInteger lastIndex = [self indexForView:lastSelectedView];
-            NSUInteger indexOfView = [self indexForView:view];
+            NSInteger lastIndex = [self indexForView:lastSelectedView];
+            NSInteger indexOfView = [self indexForView:view];
+            
+            if(lastIndex == NSNotFound || indexOfView == NSNotFound) return;
+            
             if(indexOfView < lastIndex) {
-                JAListViewItem *previousView = [self previousSelectableViewFromIndex:lastIndex];
-                NSUInteger currentIndex = [self indexForView:previousView];
+                JAListViewItem *previousView = [self previousSelectableViewFromIndex:(NSUInteger) lastIndex];
+                NSInteger currentIndex = [self indexForView:previousView];
                 while(previousView != nil && currentIndex > indexOfView) {
                     previousView.selected = YES;
                     [self.currentlySelectedViews addObject:previousView];
@@ -253,8 +266,8 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
                     currentIndex = [self indexForView:previousView];
                 }
             } else {
-                JAListViewItem *nextView = [self nextSelectableViewFromIndex:lastIndex];
-                NSUInteger currentIndex = [self indexForView:nextView];
+                JAListViewItem *nextView = [self nextSelectableViewFromIndex:(NSUInteger) lastIndex];
+                NSInteger currentIndex = [self indexForView:nextView];
                 while(nextView != nil && currentIndex < indexOfView) {
                     nextView.selected = YES;
                     [self.currentlySelectedViews addObject:nextView];
@@ -275,18 +288,18 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
                 [self.delegate listView:self didSelectView:view];
             }
         } else {
-            for(JAListViewItem *itemView in [[self.currentlySelectedViews copy] autorelease]) {
-                [[itemView retain] autorelease];
-                itemView.selected = NO;
-                [self.currentlySelectedViews removeObject:itemView];
+            for(JAListViewItem *selectedView in [[self.currentlySelectedViews copy] autorelease]) {
+                selectedView.selected = NO;
+                [self.currentlySelectedViews removeObject:selectedView];
                 
                 if(respondsToUnSelect) {
-                    [self.delegate listView:self didDeselectView:itemView];
+                    [self.delegate listView:self didDeselectView:selectedView];
                 }
             }
             
             view.selected = YES;
             [self.currentlySelectedViews addObject:view];
+            [self.window makeFirstResponder:view];
             
             if([self.delegate respondsToSelector:@selector(listView:didSelectView:)]) {
                 [self.delegate listView:self didSelectView:view];
@@ -304,6 +317,41 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
         
         [self removeTrackingArea:self.currentTrackingArea];
         self.currentTrackingArea = nil;
+    }
+}
+
+- (void)swipeWithEvent:(NSEvent *)event {
+    JAListViewItem *newView = nil;
+    if([event deltaY] < 0.0f && [self nextSelectableView] != nil) {
+        newView = [self nextSelectableView];
+    } else if([event deltaY] > 0.0f && [self previousSelectableView] != nil) {
+        newView = [self previousSelectableView];
+    } else {
+        [super swipeWithEvent:event];
+    }
+    
+    if(newView != nil) {
+        for(JAListViewItem *view in [[self.currentlySelectedViews copy] autorelease]) {
+            [[view retain] autorelease];
+            view.selected = NO;
+            [self.currentlySelectedViews removeObject:view];
+            
+            if([self.delegate respondsToSelector:@selector(listView:didDeselectView:)]) {
+                [self.delegate listView:self didDeselectView:view];
+            }
+        }
+        
+        newView.selected = YES;
+        [self.window makeFirstResponder:newView];
+        [self.currentlySelectedViews addObject:newView];
+        
+        if([self.delegate respondsToSelector:@selector(listView:didSelectView:)]) {
+            [self.delegate listView:self didSelectView:newView];
+        }
+        
+        NSRect viewFrame = newView.frame;
+        viewFrame.origin.y = self.cachedLocations[[self indexForView:newView]];
+        [(NSView *) self.scrollView.documentView scrollRectToVisible:viewFrame];
     }
 }
 
@@ -330,7 +378,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     NSMutableArray *viewsToDrag = [NSMutableArray array];
     
     for(JAListViewItem *view in self.currentlySelectedViews) {
-        BOOL shouldDrag = YES;
+        BOOL shouldDrag = NO;
         if([self.draggingSourceDelegate respondsToSelector:@selector(listView:shouldDragView:)]) {
             shouldDrag = [self.draggingSourceDelegate listView:self shouldDragView:view];
         }
@@ -415,6 +463,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     
     if(newView != nil) {
         newView.selected = YES;
+        [self.window makeFirstResponder:newView];
         [self.currentlySelectedViews addObject:newView];
         
         if([self.delegate respondsToSelector:@selector(listView:didSelectView:)]) {
@@ -511,6 +560,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     self.backgroundColor = [NSColor darkGrayColor];
     [self registerForDraggedTypes:[NSArray arrayWithObject:JAListViewDraggingPasteboardType]];
     self.currentlySelectedViews = [NSMutableArray array];
+	self.viewsBeingUsedForInertialScrolling = [NSMutableArray array];
 }
 
 - (void)viewBoundsDidChange:(NSNotification *)notification {
@@ -591,6 +641,10 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
             [views replaceObjectAtIndex:index withObject:[self viewAtIndex:index]];
         }
     }
+	
+	for(JAListViewItem *viewItem in views) {
+		viewItem.listView = self;
+	}
     
     [self.cachedViews addObjectsFromArray:views];
     [self clearCachedLocations];
@@ -615,10 +669,10 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
             [viewsToRemove removeObject:view];
         }
     }
-    
-    [viewsToAdd removeObject:self.viewBeingUsedForInertialScroll];
-    [viewsToRemove removeObject:self.viewBeingUsedForInertialScroll];
-    
+		    
+    [viewsToAdd removeObjectsInArray:self.viewsBeingUsedForInertialScrolling];
+    [viewsToRemove removeObjectsInArray:self.viewsBeingUsedForInertialScrolling];
+	
     if(animated) {
         CFTimeInterval duration = ([self.window currentEvent].modifierFlags & NSShiftKeyMask) ? 10.0f : defaultAnimationDuration;
         
@@ -637,7 +691,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     for(NSView *view in [[viewsToRemove copy] autorelease]) {
         if([view isKindOfClass:[JAListViewItem class]]) {
             minY = MIN(view.frame.origin.y, minY);
-            ((JAListViewItem *)view).listView = nil;
         } else {
             [viewsToRemove removeObject:view];
         }
@@ -650,21 +703,23 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
         }
         
         view.autoresizingMask = NSViewWidthSizable | NSViewMaxYMargin;
-        view.listView = self;
         
         CGFloat y = self.cachedLocations[[self.cachedViews indexOfObject:view]];
         minY = MIN(y, minY);
     }
     
     NSMutableArray *viewsToMove = [NSMutableArray array];
+	NSUInteger index = 0;
     for(NSView *view in existingViews) {
         if([view isKindOfClass:[JAListViewItem class]]) {
             JAListViewItem *listItemView = (JAListViewItem *) view;
             // only layout views after the first new view
-            if(listItemView.frame.origin.y >= minY && !listItemView.ignoreInListViewLayout) {
+            if((listItemView.frame.origin.y >= minY || index >= self.minIndexForReLayout) && !listItemView.ignoreInListViewLayout) {
                 [viewsToMove addObject:listItemView];
             }
         }
+		
+		index++;
     }
     
     if(self.currentAnimationBlock != nil) {
@@ -672,6 +727,14 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     } else {
         [self standardLayoutRemoveViews:viewsToRemove addViews:viewsToAdd moveViews:viewsToMove];
     }
+	
+	if([self.delegate respondsToSelector:@selector(listView:didRemoveView:)]) {
+		for(JAListViewItem *viewItem in viewsToRemove) {
+			[self.delegate listView:self didRemoveView:viewItem];
+		}
+	}
+	
+	self.minIndexForReLayout = NSUIntegerMax;
     
     self.currentAnimationBlock = nil;
     
@@ -694,14 +757,14 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 }
 
 - (void)standardLayoutAnimated:(BOOL)animated removeViews:(NSArray *)viewsToRemove addViews:(NSArray *)viewsToAdd moveViews:(NSArray *)viewsToMove {
-    for(JAListViewItem *view in viewsToRemove) {
+    for(JAListViewItem *view in viewsToRemove) {		
         id viewOrProxy = animated ? [view animator] : view;
         [viewOrProxy removeFromSuperview];
     }
     
     for(JAListViewItem *view in viewsToAdd) {
         CGFloat y = self.cachedLocations[[self.cachedViews indexOfObject:view]];
-        view.frame = NSMakeRect(self.margin.x, y, self.bounds.size.width - self.margin.x*2, view.bounds.size.height);
+        view.frame = NSIntegralRect(NSMakeRect(self.padding.left, y, self.bounds.size.width - (self.padding.left + self.padding.right), view.bounds.size.height));
         
         id viewOrProxy = animated ? [self animator] : self;
         [viewOrProxy addSubview:view];
@@ -715,7 +778,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
         CGFloat y = self.cachedLocations[indexOfView]; //!!!: boom - bad access
         
         id viewOrProxy = animated ? [view animator] : view;
-        [viewOrProxy setFrameOrigin:NSMakePoint(self.margin.x, y)];
+        [viewOrProxy setFrame:NSMakeRect(self.padding.left, y, view.bounds.size.width, view.bounds.size.height)];
     }
 }
 
@@ -748,15 +811,23 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 }
 
 - (void)recacheAllLocations {
-    CGFloat currentY = self.margin.y;
+	self.minIndexForReLayout = NSUIntegerMax;
+	
+    CGFloat currentY = self.margin.y + self.padding.top;
     NSUInteger index = 0;
     for(JAListViewItem *view in self.cachedViews) {
-        self.cachedLocations[index] = [self yForView:view proposedY:currentY];
+        CGFloat newY = [self yForView:view proposedY:currentY];
+		if(newY != self.cachedLocations[index]) {
+			self.minIndexForReLayout = MIN(self.minIndexForReLayout, index);
+		}
+		self.cachedLocations[index] = newY;
         currentY += [self heightForView:view proposedHeight:view.bounds.size.height + self.margin.y];
         index++;
     }
     
-    heightForAllContent = currentY;
+    heightForAllContent = currentY + self.padding.bottom;
+	
+	self.minIndexForReLayout = 0;
 }
 
 - (CGFloat)yForView:(JAListViewItem *)view proposedY:(CGFloat)proposedY {
@@ -772,9 +843,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 }
 
 - (JAListViewItem *)viewAtIndex:(NSUInteger)index {
-    NSUInteger numberOfViews = [self numberOfViews];
-    NSAssert2(index < numberOfViews, @"Index (%d) must be less than %d.", index, numberOfViews);
-    
     JAListViewItem *view = [self.dataSource listView:self viewAtIndex:index];
     NSAssert2([view isKindOfClass:[JAListViewItem class]], @"View must be a %@, instead: %@", NSStringFromClass([JAListViewItem class]), view);
     return view;
@@ -882,7 +950,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     if(maxIndex != NULL) *maxIndex = 0;
     
     for(JAListViewItem *view in self.currentlySelectedViews) {
-        NSUInteger index = [self indexForView:view];
+        NSUInteger index = (NSUInteger) [self indexForView:view];
         if(minIndex != NULL) *minIndex = MIN(index, *minIndex);
         if(maxIndex != NULL) *maxIndex = MAX(index, *maxIndex);
     }
@@ -929,11 +997,11 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 - (JAListViewItem *)previousSelectableViewFromIndex:(NSUInteger)startingIndex {
     BOOL respondsToShouldSelect = [self.delegate respondsToSelector:@selector(listView:shouldSelectView:)];
     JAListViewItem *previousView = nil;
-    NSInteger index = startingIndex - 1;
+    NSInteger index = (NSInteger) startingIndex - 1;
     while(previousView == nil) {
         if(index < 0) break;
         
-        JAListViewItem *potentialView = [self viewAtIndex:index];
+        JAListViewItem *potentialView = [self viewAtIndex:(NSUInteger) index];
         if(respondsToShouldSelect) {
             if([self.delegate listView:self shouldSelectView:potentialView]) {
                 previousView = potentialView;
@@ -950,6 +1018,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 }
 
 - (void)selectView:(JAListViewItem *)view {
+    [self.window makeFirstResponder:view];
     view.selected = YES;
     [self.currentlySelectedViews addObject:view];
     
@@ -976,6 +1045,26 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     }
 }
 
+- (void)markViewBeingUsedForInertialScrolling:(JAListViewItem *)newView {
+	// This value is fairly arbitrary. I've seen it use 2 different views so we'll go one over that for now.
+	static const NSUInteger maxNumberOfViewsForInertialScrolling = 3;
+	
+	NSAssert(newView != nil, @"Cannot mark a nil view as being used for inertial scrolling.");
+	
+	[self.viewsBeingUsedForInertialScrolling addObject:newView];
+	while(self.viewsBeingUsedForInertialScrolling.count > maxNumberOfViewsForInertialScrolling) {
+		[self.viewsBeingUsedForInertialScrolling removeObjectAtIndex:0];
+	}
+}
+
+- (void)unmarkViewBeingUsedForInertialScrolling:(JAListViewItem *)view {
+	[self.viewsBeingUsedForInertialScrolling removeObject:view];
+}
+
+- (void)clearViewsBeingUsedForInertialScrolling {
+	[self.viewsBeingUsedForInertialScrolling removeAllObjects];
+}
+
 @synthesize dataSource;
 @synthesize delegate;
 @synthesize draggingSourceDelegate;
@@ -983,13 +1072,15 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 @synthesize cachedVisibleViews;
 @synthesize canCallDataSourceInParallel;
 @synthesize margin;
+@synthesize padding;
 @synthesize viewBeingSelected;
-@synthesize viewBeingUsedForInertialScroll;
 @synthesize backgroundColor;
 @synthesize heightForAllContent;
 @synthesize conditionallyUseLayerBacking;
 @synthesize currentlySelectedViews;
 @synthesize currentTrackingArea;
 @synthesize currentAnimationBlock;
+@synthesize viewsBeingUsedForInertialScrolling;
+@synthesize minIndexForReLayout;
 
 @end

@@ -21,12 +21,17 @@
 - (void)addListViewItem:(JAObjectListViewItem *)view forHeaderForSection:(NSUInteger)section;
 - (void)removeListViewItemForHeaderForSection:(NSUInteger)section;
 
-- (void)removeListViewItem:(JAObjectListViewItem *)view;
+- (void)removeListViewItem:(JAListViewItem *)view;
 - (void)removeAllListViewItems;
 - (NSArray *)viewsInSection:(NSUInteger)section;
 - (NSUInteger)numberOfSections;
 
+- (JAListViewItem *)headerForSection:(NSUInteger)section;
 - (JAObjectListViewItem *)viewItemForObject:(id)object;
 - (NSIndexPath *)indexPathForObject:(id)object;
+- (void)removeListViewItemForObject:(id)object;
+- (NSArray *)allObjects;
+
+- (NSString *)debugString;
 
 @end
