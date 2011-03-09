@@ -202,14 +202,16 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
             self.viewBeingSelected.highlighted = NO;
             self.viewBeingSelected = nil;
         } else {
-            for(JAListViewItem *selectedView in [[self.currentlySelectedViews copy] autorelease]) {
-                selectedView.selected = NO;
-                [self.currentlySelectedViews removeObject:selectedView];
-                
-                if(respondsToUnSelect) {
-                    [self.delegate listView:self didDeselectView:selectedView];
-                }
-            }
+			if(self.allowNoSelection) {
+				for(JAListViewItem *selectedView in [[self.currentlySelectedViews copy] autorelease]) {
+					selectedView.selected = NO;
+					[self.currentlySelectedViews removeObject:selectedView];
+					
+					if(respondsToUnSelect) {
+						[self.delegate listView:self didDeselectView:selectedView];
+					}
+				}
+			}
         }
     } else {
         if([self.delegate respondsToSelector:@selector(listView:mouseUpOnView:withEvent:)]) {
@@ -229,6 +231,8 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
         
         if([event modifierFlags] & NSCommandKeyMask) {
             if([self.currentlySelectedViews containsObject:view]) {
+				if(!self.allowNoSelection && self.currentlySelectedViews.count < 2) return;
+				
                 [[view retain] autorelease];
                 view.selected = NO;
                 [self.currentlySelectedViews removeObject:view];
@@ -427,6 +431,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 - (void)keyDown:(NSEvent *)event {
     JAListViewItem *newView = nil;
     BOOL isShiftDown = ([event modifierFlags] & NSShiftKeyMask) != 0;
+	BOOL areUnhandledKeys = NO;
     NSString *characters = [event characters];
     for(NSUInteger characterIndex = 0; characterIndex < characters.length; characterIndex++) {
         unichar character = [characters characterAtIndex:characterIndex];
@@ -458,7 +463,9 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
                     }
                 }
             }
-        }
+        } else {
+			areUnhandledKeys = YES;
+		}
     }
     
     if(newView != nil) {
@@ -474,6 +481,10 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
         viewFrame.origin.y = self.cachedLocations[[self indexForView:newView]];
         [(NSView *) self.scrollView.documentView scrollRectToVisible:viewFrame];
     }
+	
+	if(areUnhandledKeys) {
+		[super keyDown:event];
+	}
 }
 
 - (BOOL)acceptsFirstResponder {
@@ -561,6 +572,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     [self registerForDraggedTypes:[NSArray arrayWithObject:JAListViewDraggingPasteboardType]];
     self.currentlySelectedViews = [NSMutableArray array];
 	self.viewsBeingUsedForInertialScrolling = [NSMutableArray array];
+	self.allowNoSelection = YES;
 }
 
 - (void)viewBoundsDidChange:(NSNotification *)notification {
@@ -1082,5 +1094,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 @synthesize currentAnimationBlock;
 @synthesize viewsBeingUsedForInertialScrolling;
 @synthesize minIndexForReLayout;
+@synthesize allowNoSelection;
 
 @end

@@ -135,5 +135,6 @@ extern NSString * const JAListViewDraggingPasteboardType;
 @property (nonatomic, readonly) CGFloat heightForAllContent;
 @property (nonatomic, assign) BOOL conditionallyUseLayerBacking;
 @property (nonatomic, readonly) NSArray *selectedViews;
+@property (nonatomic, assign) BOOL allowNoSelection;
 
 @end

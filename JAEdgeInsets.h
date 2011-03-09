@@ -1,6 +1,5 @@
 /*
  *  JAEdgeInsets.h
- *  GitHub
  *
  *  Created by Josh Abernathy on 1/26/11.
  *  Copyright 2011 Josh Abernathy. All rights reserved.
