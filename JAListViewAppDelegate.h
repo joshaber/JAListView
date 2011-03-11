@@ -11,7 +11,7 @@
 #import "JASectionedListView.h"
 
 
-@interface JAListViewAppDelegate : NSObject <NSApplicationDelegate, JAListViewDataSource, JAListViewDelegate, JASectionedListViewDataSource> {
+@interface JAListViewAppDelegate : NSObject <NSApplicationDelegate, NSSplitViewDelegate, JAListViewDataSource, JAListViewDelegate, JASectionedListViewDataSource> {
     NSWindow *window;
     JAListView *listView;
     JASectionedListView *sectionedListView;

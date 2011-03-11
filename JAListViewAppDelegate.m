@@ -95,6 +95,17 @@
 }
 
 
+#pragma mark NSSplitViewDelegate
+
+- (void)splitViewWillResizeSubviews:(NSNotification *)aNotification {
+    if(listView.frame.size.width < 1) {
+        [listView reloadData];
+    } else if(sectionedListView.frame.size.width < 1) {
+        [sectionedListView reloadData];
+    }
+}
+
+
 #pragma mark API
 
 @synthesize window;
