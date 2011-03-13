@@ -45,9 +45,7 @@
     [self getSection:&section andIndex:&relativeIndex fromAbsoluteIndex:index];
     
     if(relativeIndex == JASectionedListViewHeaderIndex) {
-        JAListViewItem *view = [self.sectionDataSource listView:self sectionHeaderViewForSection:section];
-        view.layer.zPosition = 99;
-        return view;
+        return [self.sectionDataSource listView:self sectionHeaderViewForSection:section];
     }
     
     return [self.sectionDataSource listView:self viewForSection:section index:relativeIndex];
