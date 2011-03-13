@@ -105,6 +105,10 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 - (void)viewDidMoveToSuperview {
     if(self.superview == nil) return;
     
+	if(self.scrollView == nil) {
+		NSLog(@"%@ is not in a scroll view. Unless you know what you're doing, this is a mistake.", self);
+	}
+	
     [self.scrollView.contentView setPostsBoundsChangedNotifications:YES];
     [self.scrollView.contentView setPostsFrameChangedNotifications:YES];
     
@@ -776,7 +780,8 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     
     for(JAListViewItem *view in viewsToAdd) {
         CGFloat y = self.cachedLocations[[self.cachedViews indexOfObject:view]];
-        view.frame = NSIntegralRect(NSMakeRect(self.padding.left, y, self.bounds.size.width - (self.padding.left + self.padding.right), view.bounds.size.height));
+		NSRect viewFrame = NSMakeRect(view.ignoresListViewPadding ? 0.0f : self.padding.left, y, view.ignoresListViewPadding ? self.bounds.size.width : self.bounds.size.width - (self.padding.left + self.padding.right), view.bounds.size.height);
+        view.frame = NSIntegralRect(viewFrame);
         
         id viewOrProxy = animated ? [self animator] : self;
         [viewOrProxy addSubview:view];
@@ -790,7 +795,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
         CGFloat y = self.cachedLocations[indexOfView]; //!!!: boom - bad access
         
         id viewOrProxy = animated ? [view animator] : view;
-        [viewOrProxy setFrame:NSMakeRect(self.padding.left, y, view.bounds.size.width, view.bounds.size.height)];
+        [viewOrProxy setFrame:NSMakeRect(view.ignoresListViewPadding ? 0.0f : self.padding.left, y, view.bounds.size.width, view.bounds.size.height)];
     }
 }
 

@@ -26,5 +26,6 @@ typedef enum {
 @property (nonatomic, assign, getter=isSelected) BOOL selected;
 @property (nonatomic, assign, getter=isHighlighted) BOOL highlighted;
 @property (nonatomic, readonly) JAListViewPosition listViewPosition;
+@property (nonatomic, assign) BOOL ignoresListViewPadding;
 
 @end

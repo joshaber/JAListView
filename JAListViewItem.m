@@ -35,6 +35,7 @@
 @synthesize selected;
 @synthesize highlighted;
 @synthesize listViewPosition;
+@synthesize ignoresListViewPadding;
 
 - (NSImage *)draggingImage {
     NSBitmapImageRep *bitmap = [self bitmapImageRepForCachingDisplayInRect:self.bounds];
