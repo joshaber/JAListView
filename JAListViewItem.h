@@ -17,7 +17,15 @@ typedef enum {
 @class JAListView;
 
 
-@interface JAListViewItem : NSView {}
+@interface JAListViewItem : NSView {
+@private
+  BOOL                ignoreInListViewLayout;
+  JAListView          *listView;
+  BOOL                selected;
+  BOOL                highlighted;
+  JAListViewPosition  listViewPosition;
+  BOOL                ignoresListViewPadding;
+}
 
 - (NSImage *)draggingImage;
 
