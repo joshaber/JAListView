@@ -895,7 +895,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     NSMutableArray *newVisibleViews = [NSMutableArray array];
     NSUInteger index = 0;
     for(JAListViewItem *view in self.cachedViews) {
-        if(NSIntersectsRect(visibleRect, NSMakeRect(view.frame.origin.x, self.cachedLocations[index], view.frame.size.width, view.frame.size.height))) {
+        if(NSIntersectsRect(visibleRect, NSMakeRect(view.frame.origin.x, self.cachedLocations[index], MAX(view.frame.size.width, 1.0f), MAX(view.frame.size.height, 1.0f)))) {
             [newVisibleViews addObject:view];
         }
         
