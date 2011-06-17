@@ -780,7 +780,8 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     
     for(JAListViewItem *view in viewsToAdd) {
         CGFloat y = self.cachedLocations[[self.cachedViews indexOfObject:view]];
-		NSRect viewFrame = NSMakeRect(view.ignoresListViewPadding ? 0.0f : self.padding.left, y, view.ignoresListViewPadding ? self.bounds.size.width : self.bounds.size.width - (self.padding.left + self.padding.right), view.bounds.size.height);
+        CGFloat height = [self heightForView:view proposedHeight:view.bounds.size.height];
+		NSRect viewFrame = NSMakeRect(view.ignoresListViewPadding ? 0.0f : self.padding.left, y, view.ignoresListViewPadding ? self.bounds.size.width : self.bounds.size.width - (self.padding.left + self.padding.right), height);
         view.frame = NSIntegralRect(viewFrame);
         
         id viewOrProxy = animated ? [self animator] : self;
@@ -793,7 +794,6 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
 			continue;
 		}
         CGFloat y = self.cachedLocations[indexOfView]; //!!!: boom - bad access
-        
         id viewOrProxy = animated ? [view animator] : view;
         [viewOrProxy setFrame:NSMakeRect(view.ignoresListViewPadding ? 0.0f : self.padding.left, y, view.bounds.size.width, view.bounds.size.height)];
     }
@@ -895,7 +895,7 @@ NSString * const JAListViewDraggingPasteboardType = @"JAListViewDraggingPasteboa
     NSMutableArray *newVisibleViews = [NSMutableArray array];
     NSUInteger index = 0;
     for(JAListViewItem *view in self.cachedViews) {
-        if(NSIntersectsRect(visibleRect, NSMakeRect(view.frame.origin.x, self.cachedLocations[index], view.frame.size.width, view.frame.size.height))) {
+        if(NSIntersectsRect(visibleRect, NSMakeRect(view.frame.origin.x, self.cachedLocations[index], MAX(view.frame.size.width, 1.0f), MAX(view.frame.size.height, 1.0f)))) {
             [newVisibleViews addObject:view];
         }
         
