@@ -21,7 +21,7 @@ typedef enum {
 
 - (NSImage *)draggingImage;
 
-@property (nonatomic, assign) __weak JAListView *listView;
+@property (nonatomic, assign) JAListView *listView;
 @property (nonatomic, assign) BOOL ignoreInListViewLayout;
 @property (nonatomic, assign, getter=isSelected) BOOL selected;
 @property (nonatomic, assign, getter=isHighlighted) BOOL highlighted;
