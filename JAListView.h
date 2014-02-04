@@ -56,20 +56,28 @@ extern NSString * const JAListViewDraggingPasteboardType;
 
 
 @interface JAListView : NSView {
-    NSMutableArray *cachedViews;
-    NSArray *cachedVisibleViews;
-    CGFloat heightForAllContent;
-    id<JAListViewDataSource> dataSource;
-    id<JAListViewDelegate> delegate;
-    id<JAListViewDraggingSourceDelegate> draggingSourceDelegate;
-    id<JAListViewDraggingDestinationDelegate> draggingDestinationDelegate;
-    BOOL canCallDataSourceInParallel;
-    NSPoint margin;
-    CGFloat *cachedLocations;
-    __weak JAListViewItem *viewBeingSelected;
-    NSColor *backgroundColor;
-    BOOL isResizingManually;
-    BOOL conditionallyUseLayerBacking;
+@private
+  NSMutableArray *cachedViews;
+  NSArray *cachedVisibleViews;
+  CGFloat heightForAllContent;
+  id<JAListViewDataSource> dataSource;
+  id<JAListViewDelegate> delegate;
+  id<JAListViewDraggingSourceDelegate> draggingSourceDelegate;
+  id<JAListViewDraggingDestinationDelegate> draggingDestinationDelegate;
+  BOOL canCallDataSourceInParallel;
+  NSPoint margin;
+  CGFloat *cachedLocations;
+  __weak JAListViewItem *viewBeingSelected;
+  NSColor *backgroundColor;
+  BOOL isResizingManually;
+  BOOL conditionallyUseLayerBacking;
+  JAEdgeInsets padding;
+  NSMutableArray *currentlySelectedViews;
+  NSTrackingArea *currentTrackingArea;
+  void (^currentAnimationBlock)(NSView *newSuperview, NSArray *viewsToAdd, NSArray *viewsToRemove, NSArray *viewsToMove);
+  NSMutableArray *viewsBeingUsedForInertialScrolling;
+  NSUInteger minIndexForReLayout;
+  BOOL allowNoSelection;
 }
 
 - (void)setup;

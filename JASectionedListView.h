@@ -22,7 +22,10 @@ enum { JASectionedListViewHeaderIndex = NSUIntegerMax };
 @end
 
 
-@interface JASectionedListView : JAListView <JAListViewDataSource> {}
+@interface JASectionedListView : JAListView <JAListViewDataSource> {
+@private
+  id<JASectionedListViewDataSource> sectionDataSource;
+}
 
 - (NSUInteger)numberOfSections;
 - (NSUInteger)numberOfViewsInSection:(NSUInteger)section;
